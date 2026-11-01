@@ -1911,7 +1911,27 @@ fn get_uninstall(kill_self: bool, uninstall_printer: bool) -> ResultType<String>
     ))
 }
 
+/// JinhoDesk: the installer writes `<APP_NAME>.lnk` on the public desktop;
+/// show it under its Korean name instead (one shortcut only).
+pub fn jinho_korean_shortcut(install: bool) {
+    let public = std::env::var("PUBLIC").unwrap_or_else(|_| "C:\\Users\\Public".to_owned());
+    let desk = std::path::Path::new(&public).join("Desktop");
+    let ko = desk.join("\u{c9c4}\u{d638} \u{b370}\u{c2a4}\u{d06c}.lnk"); // 진호 데스크
+    let en = desk.join(format!("{}.lnk", crate::get_app_name()));
+    if install {
+        if en.exists() {
+            let _ = std::fs::remove_file(&ko);
+            if let Err(e) = std::fs::rename(&en, &ko) {
+                log::warn!("rename desktop shortcut failed: {e}");
+            }
+        }
+    } else {
+        let _ = std::fs::remove_file(&ko);
+    }
+}
+
 pub fn uninstall_me(kill_self: bool) -> ResultType<()> {
+    jinho_korean_shortcut(false);
     if is_self_service_running() {
         // This CLI entry is synchronous. Portable builds reuse the retained user configuration.
         tokio::runtime::Builder::new_current_thread()

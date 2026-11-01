@@ -25,6 +25,7 @@ import '../../models/shortcut_model.dart';
 import '../../utils/image.dart';
 import '../widgets/dialog.dart';
 import '../widgets/custom_scale_widget.dart';
+import '../widgets/jinho_side_keyboard.dart';
 
 final initText = '1' * 1024;
 
@@ -185,6 +186,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   Future<void> dispose() async {
     HardwareKeyboard.instance.removeHandler(_handleLocalKeyEvent);
     WidgetsBinding.instance.removeObserver(this);
+    JinhoSideKeyboard.visible.value = false;
     // Close the session up-front. `gFFI.close()` below only calls `sessionClose`
     // after several awaits (canvas save, image update, the `enable_soft_keyboard`
     // platform call), so if the app is backgrounded while this page is disposing,
@@ -436,7 +438,57 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
     inputModel.inputKey(char);
   }
 
-  void openKeyboard() {
+  bool get _sideKeyboardWanted {
+    final c = JinhoSideKeyboard.choice;
+    return JinhoSideKeyboard.isLandscape() &&
+        (c == JinhoSideKeyboard.right || c == JinhoSideKeyboard.left);
+  }
+
+  void _showSideKeyboard() {
+    inputModel.keyboardInputAllowed = true;
+    _timer?.cancel();
+    if (_showEdit) {
+      gFFI.invokeMethod("enable_soft_keyboard", false);
+      _mobileFocusNode.unfocus();
+      _physicalFocusNode.requestFocus();
+    }
+    setState(() => _showEdit = false);
+    JinhoSideKeyboard.visible.value = true;
+    Timer(const Duration(milliseconds: 100),
+        () => gFFI.canvasModel.updateViewStyle());
+  }
+
+  void _hideSideKeyboard() {
+    if (!JinhoSideKeyboard.visible.value) return;
+    JinhoSideKeyboard.visible.value = false;
+    Timer(const Duration(milliseconds: 100),
+        () => gFFI.canvasModel.updateViewStyle());
+  }
+
+  /// Long-press on the keyboard button: pick the landscape keyboard again.
+  Future<void> chooseKeyboard() async {
+    final picked = await JinhoSideKeyboard.choose(context);
+    if (picked == null) return;
+    if (picked == JinhoSideKeyboard.phone) {
+      if (JinhoSideKeyboard.visible.value) {
+        _hideSideKeyboard();
+        openKeyboard();
+      }
+    } else {
+      openKeyboard();
+    }
+  }
+
+  Future<void> openKeyboard() async {
+    if (JinhoSideKeyboard.visible.value) {
+      _hideSideKeyboard();
+      return;
+    }
+    if (JinhoSideKeyboard.isLandscape() && JinhoSideKeyboard.choice.isEmpty) {
+      // First use: ask once, then remember for every later connection.
+      if (await JinhoSideKeyboard.choose(context) == null) return;
+      if (!mounted) return;
+    }
     final allowWaylandKeyboard =
         mainGetPeerBoolOptionSync(widget.id, kPeerOptionAllowWaylandKeyboard);
     if (shouldShowWaylandKeyboardPrompt(
@@ -459,6 +511,10 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   }
 
   void _openKeyboardUnlocked() {
+    if (_sideKeyboardWanted) {
+      _showSideKeyboard();
+      return;
+    }
     inputModel.keyboardInputAllowed = true;
     gFFI.invokeMethod("enable_soft_keyboard", true);
     // destroy first, so that our _value trick can work
@@ -561,7 +617,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                                   gFFI.canvasModel.updateViewStyle();
                                 });
                               }
-                              return Container(
+                              final body = Container(
                                 color: MyTheme.canvasColor,
                                 child: inputModel.isPhysicalMouse.value
                                     ? getBodyForMobile()
@@ -570,6 +626,39 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                                         ffi: gFFI,
                                       ),
                               );
+                              return Obx(() {
+                                if (!JinhoSideKeyboard.visible.value ||
+                                    orientation != Orientation.landscape) {
+                                  return body;
+                                }
+                                final panel = SizedBox(
+                                  width: MediaQuery.of(ctx).size.width *
+                                      JinhoSideKeyboard.widthFraction,
+                                  child: JinhoSideKeyboardPanel(
+                                    onHide: _hideSideKeyboard,
+                                    onSwapSide: () async {
+                                      await JinhoSideKeyboard.setChoice(
+                                          JinhoSideKeyboard.onLeft
+                                              ? JinhoSideKeyboard.right
+                                              : JinhoSideKeyboard.left);
+                                      setState(() {});
+                                    },
+                                    onUsePhoneKeyboard: () async {
+                                      await JinhoSideKeyboard.setChoice(
+                                          JinhoSideKeyboard.phone);
+                                      _hideSideKeyboard();
+                                      openKeyboard();
+                                    },
+                                  ),
+                                );
+                                return Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: JinhoSideKeyboard.onLeft
+                                      ? [panel, Expanded(child: body)]
+                                      : [Expanded(child: body), panel],
+                                );
+                              });
                             }),
                           ),
                   );
@@ -630,10 +719,12 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                       ? []
                       : gFFI.ffiModel.isPeerAndroid
                           ? [
-                              IconButton(
-                                  color: Colors.white,
-                                  icon: Icon(Icons.keyboard),
-                                  onPressed: openKeyboard),
+                              GestureDetector(
+                                  onLongPress: chooseKeyboard,
+                                  child: IconButton(
+                                      color: Colors.white,
+                                      icon: Icon(Icons.keyboard),
+                                      onPressed: openKeyboard)),
                               IconButton(
                                 color: Colors.white,
                                 icon: const Icon(Icons.build),
@@ -642,10 +733,12 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                               )
                             ]
                           : [
-                              IconButton(
-                                  color: Colors.white,
-                                  icon: Icon(Icons.keyboard),
-                                  onPressed: openKeyboard),
+                              GestureDetector(
+                                  onLongPress: chooseKeyboard,
+                                  child: IconButton(
+                                      color: Colors.white,
+                                      icon: Icon(Icons.keyboard),
+                                      onPressed: openKeyboard)),
                               IconButton(
                                 color: Colors.white,
                                 icon: Icon(gFFI.ffiModel.touchMode
