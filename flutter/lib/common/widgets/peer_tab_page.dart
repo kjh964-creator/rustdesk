@@ -85,6 +85,16 @@ class _PeerTabPageState extends State<PeerTabPage>
               ? PeerUiType.tile
               : PeerUiType.list;
     }
+    // JinhoDesk home design B shows devices as rows: switch once to the list
+    // view, later choices from the view menu are kept.
+    if (isDesktop &&
+        !isOptionFixed(kOptionPeerCardUiType) &&
+        bind.getLocalFlutterOption(k: 'jinho-home-b') != 'Y') {
+      peerCardUiType.value = PeerUiType.list;
+      bind.setLocalFlutterOption(
+          k: kOptionPeerCardUiType, v: PeerUiType.list.index.toString());
+      bind.setLocalFlutterOption(k: 'jinho-home-b', v: 'Y');
+    }
     hideAbTagsPanel.value =
         bind.mainGetLocalOption(key: kOptionHideAbTagsPanel) == 'Y';
   }
@@ -119,9 +129,24 @@ class _PeerTabPageState extends State<PeerTabPage>
                 child: selectionWrap(Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    if (isDesktop)
+                      Text('내 기기',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.color
+                                  ?.withOpacity(0.6))),
                     Expanded(
-                        child: visibleContextMenuListener(
-                            _createSwitchBar(context))),
+                        child: isDesktop
+                            ? Align(
+                                alignment: Alignment.centerRight,
+                                child: visibleContextMenuListener(
+                                    _createSwitchBar(context)))
+                            : visibleContextMenuListener(
+                                _createSwitchBar(context))),
+                    if (isDesktop) const SizedBox(width: 8),
                     if (stateGlobal.isPortrait.isTrue)
                       ..._portraitRightActions(context)
                     else
@@ -139,6 +164,7 @@ class _PeerTabPageState extends State<PeerTabPage>
     final model = Provider.of<PeerTabModel>(context);
     var counter = -1;
     return ReorderableListView(
+        shrinkWrap: isDesktop,
         buildDefaultDragHandles: false,
         onReorder: model.reorder,
         scrollDirection: Axis.horizontal,
@@ -158,6 +184,7 @@ class _PeerTabPageState extends State<PeerTabPage>
             bottom: BorderSide(width: 2, color: color!),
           ));
           counter += 1;
+          final position = counter;
           return ReorderableDragStartListener(
               key: ValueKey(t),
               index: counter,
@@ -167,11 +194,27 @@ class _PeerTabPageState extends State<PeerTabPage>
                     onTriggered: isMobile ? mobileShowTabVisibilityMenu : null,
                     child: InkWell(
                       child: Container(
-                        decoration: (hover.value
-                            ? (selected ? decoBorder : deco)
-                            : (selected ? decoBorder : null)),
-                        child: Icon(model.tabIcon(t), color: color)
-                            .paddingSymmetric(horizontal: 4),
+                        alignment: isDesktop ? Alignment.center : null,
+                        decoration: isDesktop
+                            ? null
+                            : (hover.value
+                                ? (selected ? decoBorder : deco)
+                                : (selected ? decoBorder : null)),
+                        child: isDesktop
+                            ? Text(
+                                '${position > 0 ? '·  ' : ''}${model.tabTooltip(t)}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: hover.value && !selected
+                                        ? MyTheme.tabbar(context)
+                                            .selectedTextColor
+                                        : (selected ? kJinhoGreen : color),
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.normal),
+                              ).paddingSymmetric(vertical: 6)
+                            : Icon(model.tabIcon(t), color: color)
+                                .paddingSymmetric(horizontal: 4),
                       ).paddingSymmetric(horizontal: 4),
                       onTap: isOptionFixed(kOptionPeerTabIndex)
                           ? null

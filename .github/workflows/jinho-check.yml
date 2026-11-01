@@ -51,4 +51,8 @@ jobs:
             lib/common.dart lib/desktop/pages/desktop_home_page.dart \
             lib/desktop/pages/desktop_setting_page.dart \
             lib/mobile/pages/connection_page.dart \
-            lib/desktop/pages/connection_page.dart
+            lib/desktop/pages/connection_page.dart \
+            lib/common/widgets/peer_card.dart \
+            lib/common/widgets/peer_tab_page.dart \
+            lib/common/widgets/peers_view.dart \
+            lib/models/peer_model.dart lib/consts.dart

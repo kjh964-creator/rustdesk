@@ -38,7 +38,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   Timer? _updateTimer;
 
   double get em => 14.0;
-  double? get height => bind.isIncomingOnly() ? null : em * 3;
+  double? get height => bind.isIncomingOnly() ? null : 32;
 
   void onUsePublicServerGuide() {
     const url = "https://rustdesk.com/pricing";
@@ -162,8 +162,18 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               ? translate("connecting_status")
               : stateGlobal.svcStatus.value == SvcStatus.notReady
                   ? translate("not_ready_status")
-                  : translate('Ready'),
-      style: TextStyle(fontSize: em),
+                  : bind.isIncomingOnly() || _svcIsUsingPublicServer.value
+                      ? translate('Ready')
+                      : '${translate('Ready')} · 진호 서버에 연결됨',
+      style: bind.isIncomingOnly()
+          ? TextStyle(fontSize: em)
+          : TextStyle(
+              fontSize: 12,
+              color: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.color
+                  ?.withOpacity(0.6)),
     );
   }
 
@@ -189,7 +199,10 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
-  const ConnectionPage({Key? key}) : super(key: key);
+  const ConnectionPage({Key? key, this.jinhoHeader}) : super(key: key);
+
+  /// JinhoDesk home design B: builds the top bar around the remote ID input.
+  final Widget Function(BuildContext context, Widget idInput)? jinhoHeader;
 
   @override
   State<ConnectionPage> createState() => _ConnectionPageState();
@@ -304,6 +317,16 @@ class _ConnectionPageState extends State<ConnectionPage>
   @override
   Widget build(BuildContext context) {
     final isOutgoingOnly = bind.isOutgoingOnly();
+    if (widget.jinhoHeader != null) {
+      return Column(
+        children: [
+          widget.jinhoHeader!(context, _buildJinhoIdInput(context)),
+          Expanded(child: PeerTabPage().paddingOnly(left: 22, top: 12)),
+          if (!isOutgoingOnly) const Divider(height: 1),
+          if (!isOutgoingOnly) OnlineStatusWidget()
+        ],
+      );
+    }
     return Column(
       children: [
         Expanded(
@@ -356,163 +379,7 @@ class _ConnectionPageState extends State<ConnectionPage>
             Row(
               children: [
                 Expanded(
-                    child: RawAutocomplete<Peer>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text == '') {
-                      _autocompleteOpts = const Iterable<Peer>.empty();
-                    } else if (_allPeersLoader.peers.isEmpty &&
-                        !_allPeersLoader.isPeersLoaded) {
-                      Peer emptyPeer = Peer(
-                        id: '',
-                        username: '',
-                        hostname: '',
-                        alias: '',
-                        platform: '',
-                        tags: [],
-                        hash: '',
-                        password: '',
-                        forceAlwaysRelay: false,
-                        rdpPort: '',
-                        rdpUsername: '',
-                        loginName: '',
-                        device_group_name: '',
-                        note: '',
-                      );
-                      _autocompleteOpts = [emptyPeer];
-                    } else {
-                      String textWithoutSpaces =
-                          textEditingValue.text.replaceAll(" ", "");
-                      if (int.tryParse(textWithoutSpaces) != null) {
-                        textEditingValue = TextEditingValue(
-                          text: textWithoutSpaces,
-                          selection: textEditingValue.selection,
-                        );
-                      }
-                      String textToFind = textEditingValue.text.toLowerCase();
-                      _autocompleteOpts = _allPeersLoader.peers
-                          .where((peer) =>
-                              peer.id.toLowerCase().contains(textToFind) ||
-                              peer.username
-                                  .toLowerCase()
-                                  .contains(textToFind) ||
-                              peer.hostname
-                                  .toLowerCase()
-                                  .contains(textToFind) ||
-                              peer.alias.toLowerCase().contains(textToFind))
-                          .toList();
-                      _allPeersLoader.queryOnlines(_autocompleteOpts);
-                    }
-                    return _autocompleteOpts;
-                  },
-                  focusNode: _idFocusNode,
-                  textEditingController: _idEditingController,
-                  fieldViewBuilder: (
-                    BuildContext context,
-                    TextEditingController fieldTextEditingController,
-                    FocusNode fieldFocusNode,
-                    VoidCallback onFieldSubmitted,
-                  ) {
-                    updateTextAndPreserveSelection(
-                        fieldTextEditingController, _idController.text);
-                    return Obx(() => TextField(
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          keyboardType: TextInputType.visiblePassword,
-                          focusNode: fieldFocusNode,
-                          style: const TextStyle(
-                            fontFamily: 'WorkSans',
-                            fontSize: 22,
-                            height: 1.4,
-                          ),
-                          maxLines: 1,
-                          cursorColor:
-                              Theme.of(context).textTheme.titleLarge?.color,
-                          decoration: InputDecoration(
-                              filled: false,
-                              counterText: '',
-                              hintText: _idInputFocused.value
-                                  ? null
-                                  : translate('Enter Remote ID'),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 15, vertical: 13)),
-                          controller: fieldTextEditingController,
-                          inputFormatters: [IDTextInputFormatter()],
-                          onChanged: (v) {
-                            _idController.id = v;
-                          },
-                          onSubmitted: (_) {
-                            onConnect();
-                          },
-                        ).workaroundFreezeLinuxMint());
-                  },
-                  onSelected: (option) {
-                    setState(() {
-                      _idController.id = option.id;
-                      FocusScope.of(context).unfocus();
-                    });
-                  },
-                  optionsViewBuilder: (BuildContext context,
-                      AutocompleteOnSelected<Peer> onSelected,
-                      Iterable<Peer> options) {
-                    options = _autocompleteOpts;
-                    double maxHeight = options.length * 50;
-                    if (options.length == 1) {
-                      maxHeight = 52;
-                    } else if (options.length == 3) {
-                      maxHeight = 146;
-                    } else if (options.length == 4) {
-                      maxHeight = 193;
-                    }
-                    maxHeight = maxHeight.clamp(0, 200);
-
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Container(
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 5,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(5),
-                              child: Material(
-                                elevation: 4,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight: maxHeight,
-                                    maxWidth: 319,
-                                  ),
-                                  child: _allPeersLoader.peers.isEmpty &&
-                                          !_allPeersLoader.isPeersLoaded
-                                      ? Container(
-                                          height: 80,
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          ))
-                                      : Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 5),
-                                          child: ListView(
-                                            children: options
-                                                .map((peer) =>
-                                                    AutocompletePeerTile(
-                                                        onSelect: () =>
-                                                            onSelected(peer),
-                                                        peer: peer))
-                                                .toList(),
-                                          ),
-                                        ),
-                                ),
-                              ))),
-                    );
-                  },
-                )),
+                    child: _buildIdAutocomplete(context)),
               ],
             ),
             Padding(
@@ -536,82 +403,7 @@ class _ConnectionPageState extends State<ConnectionPage>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
-                    child: StatefulBuilder(
-                      builder: (context, setState) {
-                        var offset = Offset(0, 0);
-                        return Obx(() => InkWell(
-                              child: _menuOpen.value
-                                  ? Transform.rotate(
-                                      angle: pi,
-                                      child: Icon(IconFont.more, size: 14),
-                                    )
-                                  : Icon(IconFont.more, size: 14),
-                              onTapDown: (e) {
-                                offset = e.globalPosition;
-                              },
-                              onTap: () async {
-                                _menuOpen.value = true;
-                                final x = offset.dx;
-                                final y = offset.dy;
-                                await mod_menu
-                                    .showMenu(
-                                  context: context,
-                                  position: RelativeRect.fromLTRB(x, y, x, y),
-                                  items: [
-                                    (
-                                      'Transfer file',
-                                      () => onConnect(isFileTransfer: true)
-                                    ),
-                                    (
-                                      'View camera',
-                                      () => onConnect(isViewCamera: true)
-                                    ),
-                                    (
-                                      '${translate('Terminal')} (beta)',
-                                      () => onConnect(isTerminal: true)
-                                    ),
-                                    // `connect` routes this through the
-                                    // desktop path only; the peer card gates
-                                    // it the same way.
-                                    if (isDesktop)
-                                      (
-                                        'TCP tunneling',
-                                        () => onConnect(isTcpTunneling: true)
-                                      ),
-                                  ]
-                                      .map((e) => MenuEntryButton<String>(
-                                            childBuilder: (TextStyle? style) =>
-                                                Text(
-                                              translate(e.$1),
-                                              style: style,
-                                            ),
-                                            proc: () => e.$2(),
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal:
-                                                    kDesktopMenuPadding.left),
-                                            dismissOnClicked: true,
-                                          ))
-                                      .map((e) => e.build(
-                                          context,
-                                          const MenuConfig(
-                                              commonColor: CustomPopupMenuTheme
-                                                  .commonColor,
-                                              height:
-                                                  CustomPopupMenuTheme.height,
-                                              dividerHeight:
-                                                  CustomPopupMenuTheme
-                                                      .dividerHeight)))
-                                      .expand((i) => i)
-                                      .toList(),
-                                  elevation: 8,
-                                )
-                                    .then((_) {
-                                  _menuOpen.value = false;
-                                });
-                              },
-                            ));
-                      },
-                    ),
+                    child: _buildMoreMenu(),
                   ),
                 ),
               ]),
@@ -622,5 +414,308 @@ class _ConnectionPageState extends State<ConnectionPage>
     );
     return Container(
         constraints: const BoxConstraints(maxWidth: 600), child: w);
+  }
+
+  Widget _buildIdAutocomplete(BuildContext context, {bool jinho = false}) {
+    return RawAutocomplete<Peer>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text == '') {
+          _autocompleteOpts = const Iterable<Peer>.empty();
+        } else if (_allPeersLoader.peers.isEmpty &&
+            !_allPeersLoader.isPeersLoaded) {
+          Peer emptyPeer = Peer(
+            id: '',
+            username: '',
+            hostname: '',
+            alias: '',
+            platform: '',
+            tags: [],
+            hash: '',
+            password: '',
+            forceAlwaysRelay: false,
+            rdpPort: '',
+            rdpUsername: '',
+            loginName: '',
+            device_group_name: '',
+            note: '',
+          );
+          _autocompleteOpts = [emptyPeer];
+        } else {
+          String textWithoutSpaces =
+              textEditingValue.text.replaceAll(" ", "");
+          if (int.tryParse(textWithoutSpaces) != null) {
+            textEditingValue = TextEditingValue(
+              text: textWithoutSpaces,
+              selection: textEditingValue.selection,
+            );
+          }
+          String textToFind = textEditingValue.text.toLowerCase();
+          _autocompleteOpts = _allPeersLoader.peers
+              .where((peer) =>
+                  peer.id.toLowerCase().contains(textToFind) ||
+                  peer.username
+                      .toLowerCase()
+                      .contains(textToFind) ||
+                  peer.hostname
+                      .toLowerCase()
+                      .contains(textToFind) ||
+                  peer.alias.toLowerCase().contains(textToFind))
+              .toList();
+          _allPeersLoader.queryOnlines(_autocompleteOpts);
+        }
+        return _autocompleteOpts;
+      },
+      focusNode: _idFocusNode,
+      textEditingController: _idEditingController,
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldTextEditingController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
+        updateTextAndPreserveSelection(
+            fieldTextEditingController, _idController.text);
+        return Obx(() => TextField(
+              autocorrect: false,
+              enableSuggestions: false,
+              keyboardType: TextInputType.visiblePassword,
+              focusNode: fieldFocusNode,
+              style: jinho
+                  ? const TextStyle(
+                      fontFamily: 'WorkSans',
+                      fontSize: 18,
+                      height: 1.3,
+                      color: Color(0xFF17202A),
+                    )
+                  : const TextStyle(
+                      fontFamily: 'WorkSans',
+                      fontSize: 22,
+                      height: 1.4,
+                    ),
+              maxLines: 1,
+              cursorColor: jinho
+                  ? const Color(0xFF17202A)
+                  : Theme.of(context).textTheme.titleLarge?.color,
+              decoration: jinho
+                  ? InputDecoration(
+                      filled: false,
+                      isDense: true,
+                      counterText: '',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintText: _idInputFocused.value ? null : '접속할 ID 입력',
+                      hintStyle: const TextStyle(
+                          fontSize: 15, color: Color(0xFF9AA3AB)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 9))
+                  : InputDecoration(
+                      filled: false,
+                      counterText: '',
+                      hintText: _idInputFocused.value
+                          ? null
+                          : translate('Enter Remote ID'),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 13)),
+              controller: fieldTextEditingController,
+              inputFormatters: [IDTextInputFormatter()],
+              onChanged: (v) {
+                _idController.id = v;
+              },
+              onSubmitted: (_) {
+                onConnect();
+              },
+            ).workaroundFreezeLinuxMint());
+      },
+      onSelected: (option) {
+        setState(() {
+          _idController.id = option.id;
+          FocusScope.of(context).unfocus();
+        });
+      },
+      optionsViewBuilder: (BuildContext context,
+          AutocompleteOnSelected<Peer> onSelected,
+          Iterable<Peer> options) {
+        options = _autocompleteOpts;
+        double maxHeight = options.length * 50;
+        if (options.length == 1) {
+          maxHeight = 52;
+        } else if (options.length == 3) {
+          maxHeight = 146;
+        } else if (options.length == 4) {
+          maxHeight = 193;
+        }
+        maxHeight = maxHeight.clamp(0, 200);
+
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 5,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Material(
+                    elevation: 4,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: maxHeight,
+                        maxWidth: 319,
+                      ),
+                      child: _allPeersLoader.peers.isEmpty &&
+                              !_allPeersLoader.isPeersLoaded
+                          ? Container(
+                              height: 80,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ))
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 5),
+                              child: ListView(
+                                children: options
+                                    .map((peer) =>
+                                        AutocompletePeerTile(
+                                            onSelect: () =>
+                                                onSelected(peer),
+                                            peer: peer))
+                                    .toList(),
+                              ),
+                            ),
+                    ),
+                  ))),
+        );
+      },
+    );
+  }
+
+  Widget _buildMoreMenu({Color? iconColor}) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        var offset = Offset(0, 0);
+        return Obx(() => InkWell(
+              child: _menuOpen.value
+                  ? Transform.rotate(
+                      angle: pi,
+                      child: Icon(IconFont.more, size: 14, color: iconColor),
+                    )
+                  : Icon(IconFont.more, size: 14, color: iconColor),
+              onTapDown: (e) {
+                offset = e.globalPosition;
+              },
+              onTap: () async {
+                _menuOpen.value = true;
+                final x = offset.dx;
+                final y = offset.dy;
+                await mod_menu
+                    .showMenu(
+                  context: context,
+                  position: RelativeRect.fromLTRB(x, y, x, y),
+                  items: [
+                    (
+                      'Transfer file',
+                      () => onConnect(isFileTransfer: true)
+                    ),
+                    (
+                      'View camera',
+                      () => onConnect(isViewCamera: true)
+                    ),
+                    (
+                      '${translate('Terminal')} (beta)',
+                      () => onConnect(isTerminal: true)
+                    ),
+                    // `connect` routes this through the
+                    // desktop path only; the peer card gates
+                    // it the same way.
+                    if (isDesktop)
+                      (
+                        'TCP tunneling',
+                        () => onConnect(isTcpTunneling: true)
+                      ),
+                  ]
+                      .map((e) => MenuEntryButton<String>(
+                            childBuilder: (TextStyle? style) =>
+                                Text(
+                              translate(e.$1),
+                              style: style,
+                            ),
+                            proc: () => e.$2(),
+                            padding: EdgeInsets.symmetric(
+                                horizontal:
+                                    kDesktopMenuPadding.left),
+                            dismissOnClicked: true,
+                          ))
+                      .map((e) => e.build(
+                          context,
+                          const MenuConfig(
+                              commonColor: CustomPopupMenuTheme
+                                  .commonColor,
+                              height:
+                                  CustomPopupMenuTheme.height,
+                              dividerHeight:
+                                  CustomPopupMenuTheme
+                                      .dividerHeight)))
+                      .expand((i) => i)
+                      .toList(),
+                  elevation: 8,
+                )
+                    .then((_) {
+                  _menuOpen.value = false;
+                });
+              },
+            ));
+      },
+    );
+  }
+
+  Widget _buildJinhoIdInput(BuildContext context) {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _buildIdAutocomplete(context, jinho: true)),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: Center(
+                child: _buildMoreMenu(iconColor: const Color(0xFF66707B))),
+          ),
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 74,
+            height: 38,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kJinhoAmber,
+                foregroundColor: const Color(0xFF3B2C00),
+                elevation: 0,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                onConnect();
+              },
+              child: Text(translate("Connect"),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -59,6 +59,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    if (!isIncomingOnly) {
+      return _buildBlock(
+          child: Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: ConnectionPage(jinhoHeader: _buildJinhoHeader),
+      ));
+    }
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,6 +189,177 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: ConnectionPage(),
+    );
+  }
+
+  Widget _buildJinhoHeader(BuildContext context, Widget idInput) {
+    final isOutgoingOnly = bind.isOutgoingOnly();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: kJinhoGreen,
+          padding: const EdgeInsets.fromLTRB(22, 16, 10, 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                flex: 5,
+                child: isOutgoingOnly
+                    ? const SizedBox.shrink()
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: _buildJinhoMyId(context),
+                      ),
+              ),
+              const SizedBox(width: 16),
+              Flexible(
+                flex: 4,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 340),
+                        child: idInput,
+                      ),
+                    ),
+                    Tooltip(
+                      message: translate('Settings'),
+                      child: InkWell(
+                        onTap: DesktopTabPage.onAddSetting,
+                        borderRadius: BorderRadius.circular(15),
+                        child: const Padding(
+                          padding: EdgeInsets.all(5),
+                          child: Icon(Icons.more_vert,
+                              size: 20, color: Colors.white),
+                        ),
+                      ),
+                    ).marginOnly(left: 4),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isOutgoingOnly) buildPresetPasswordWarning(),
+        Obx(() => buildHelpCards(stateGlobal.updateUrl.value))
+            .paddingSymmetric(horizontal: 22),
+      ],
+    );
+  }
+
+  Widget _jinhoBarIcon(IconData icon, String tip, {VoidCallback? onTap}) {
+    final box = Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Icon(icon, size: 13, color: Colors.white),
+    );
+    return Tooltip(
+      message: tip,
+      child: onTap == null
+          ? box
+          : InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(6),
+              child: box,
+            ),
+    );
+  }
+
+  Widget _buildJinhoMyId(BuildContext context) {
+    final model = gFFI.serverModel;
+    const labelStyle = TextStyle(color: Color(0xBFFFFFFF), fontSize: 11);
+    const valueStyle = TextStyle(
+        color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700);
+    void copyId() {
+      Clipboard.setData(ClipboardData(text: model.serverId.text));
+      showToast(translate("Copied"));
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('내 ID', style: labelStyle),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onDoubleTap: copyId,
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: model.serverId,
+                    builder: (_, v, __) => Text(v.text, style: valueStyle),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _jinhoBarIcon(Icons.copy_rounded, '복사', onTap: copyId),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(width: 26),
+        ChangeNotifierProvider.value(
+          value: gFFI.serverModel,
+          child: Consumer<ServerModel>(
+            builder: (context, model, child) =>
+                _buildJinhoPassword(context, model, labelStyle, valueStyle),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJinhoPassword(BuildContext context, ServerModel model,
+      TextStyle labelStyle, TextStyle valueStyle) {
+    final showOneTime = model.approveMode != 'click' &&
+        model.verificationMethod != kUsePermanentPassword;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('비밀번호', style: labelStyle),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onDoubleTap: () {
+                if (showOneTime) {
+                  Clipboard.setData(
+                      ClipboardData(text: model.serverPasswd.text));
+                  showToast(translate("Copied"));
+                }
+              },
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: model.serverPasswd,
+                builder: (_, v, __) => Text(v.text, style: valueStyle),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (showOneTime)
+              AnimatedRotationWidget(
+                onPressed: () => bind.mainUpdateTemporaryPassword(),
+                child: _jinhoBarIcon(
+                    Icons.refresh, translate('Refresh Password')),
+              ),
+            if (!bind.isDisableSettings())
+              _jinhoBarIcon(Icons.edit, translate('Change Password'),
+                      onTap: () => DesktopSettingPage.switch2page(
+                          SettingsTabKey.safety))
+                  .marginOnly(left: 6),
+          ],
+        ),
+      ],
     );
   }
 

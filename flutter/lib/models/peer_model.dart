@@ -5,6 +5,9 @@ import 'platform_model.dart';
 // ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 
+/// Favorite peer ids as of the last peer list build (JinhoDesk desktop rows).
+Set<String> jinhoFavIds = {};
+
 class Peer {
   final String id;
   String hash; // personal ab hash password

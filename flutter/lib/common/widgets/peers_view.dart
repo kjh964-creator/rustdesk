@@ -251,7 +251,8 @@ class _PeersViewState extends State<_PeersView>
               // and the peers change event will trigger _buildPeersView().
               return !isPortrait
                   ? Obx(() => peerCardUiType.value == PeerUiType.list
-                      ? Container(height: 45, child: visibilityChild)
+                      ? Container(
+                          height: isDesktop ? 54 : 45, child: visibilityChild)
                       : peerCardUiType.value == PeerUiType.grid
                           ? SizedBox(
                               width: 220, height: 140, child: visibilityChild)
@@ -276,6 +277,10 @@ class _PeersViewState extends State<_PeersView>
                         controller: _scrollController,
                         itemCount: peers.length,
                         itemBuilder: (BuildContext context, int index) {
+                          if (isDesktop) {
+                            return buildOnePeer(peers[index], false)
+                                .marginOnly(right: space);
+                          }
                           return buildOnePeer(peers[index], false).marginOnly(
                               right: space,
                               top: index == 0 ? 0 : space / 2,
@@ -389,6 +394,17 @@ class _PeersViewState extends State<_PeersView>
         case PeerSortType.status:
           peers.sort((p1, p2) => p1.online ? -1 : 1);
           break;
+      }
+    }
+
+    if (isDesktop) {
+      final favs = (await bind.mainGetFav()).toSet();
+      jinhoFavIds = favs;
+      if (favs.isNotEmpty) {
+        peers = [
+          ...peers.where((p) => favs.contains(p.id)),
+          ...peers.where((p) => !favs.contains(p.id)),
+        ];
       }
     }
 

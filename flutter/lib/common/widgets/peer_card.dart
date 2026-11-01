@@ -132,6 +132,9 @@ class _PeerCardState extends State<_PeerCard>
   }
 
   makeChild(bool isPortrait, Peer peer) {
+    if (isDesktop && !isPortrait && peerCardUiType.value == PeerUiType.list) {
+      return _makeJinhoRow(peer);
+    }
     final name = hideUsernameOnCard == true
         ? peer.hostname
         : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
@@ -241,6 +244,173 @@ class _PeerCardState extends State<_PeerCard>
           ),
         )
       ],
+    );
+  }
+
+  Color _jinhoOsColor(Peer peer) {
+    final p = peer.platform.toLowerCase();
+    if (p.startsWith('win')) return const Color(0xFF4B6A88);
+    if (p.startsWith('android')) return const Color(0xFF6F9A52);
+    if (p.startsWith('mac') || p.startsWith('ios')) {
+      return const Color(0xFF7A7F8C);
+    }
+    if (p.startsWith('linux')) return const Color(0xFFB07B3B);
+    return str2color('${peer.id}${peer.platform}', 0xff);
+  }
+
+  Widget _jinhoButton(String text, String tip,
+      {required bool filled, required VoidCallback onTap}) {
+    final theme = Theme.of(context);
+    var primaryDown = false;
+    return Tooltip(
+      message: tip,
+      waitDuration: const Duration(seconds: 1),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        // Listener, like the more-menu button: a tap must not wait for the
+        // row's double-tap recognizer.
+        child: Listener(
+          onPointerDown: (e) => primaryDown = e.buttons == 1,
+          onPointerUp: (_) {
+            if (primaryDown) onTap();
+            primaryDown = false;
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: filled ? kJinhoGreen : theme.colorScheme.background,
+              border: Border.all(
+                  color: filled ? kJinhoGreen : theme.dividerColor),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: filled ? FontWeight.w700 : FontWeight.normal,
+                color: filled ? Colors.white : theme.textTheme.bodyLarge?.color,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _makeJinhoRow(Peer peer) {
+    final PeerTabModel peerTabModel = Provider.of(context);
+    final theme = Theme.of(context);
+    final grey = theme.textTheme.titleLarge?.color?.withOpacity(0.55);
+    final title = peer.alias.isNotEmpty
+        ? peer.alias
+        : (peer.hostname.isNotEmpty ? peer.hostname : formatID(peer.id));
+    final sub = [
+      formatID(peer.id),
+      if (peer.platform.isNotEmpty) peer.platform,
+      if (_showNote(peer)) peer.note,
+    ].join(' · ');
+    final letter =
+        peer.platform.isNotEmpty ? peer.platform[0].toUpperCase() : '?';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _jinhoOsColor(peer),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(letter,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12)),
+              ),
+              if (_shouldBuildPasswordIcon(peer))
+                const Positioned(
+                  top: 1,
+                  left: 1,
+                  child: Icon(Icons.key, size: 8, color: Colors.white),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    if (jinhoFavIds.contains(peer.id))
+                      const Icon(Icons.star_rounded,
+                              size: 14, color: kJinhoAmber)
+                          .marginOnly(left: 4),
+                  ],
+                ),
+                Tooltip(
+                  message: hideUsernameOnCard == true
+                      ? peer.hostname
+                      : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}',
+                  waitDuration: const Duration(seconds: 1),
+                  child: Text(
+                    sub,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 64,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: peer.online
+                        ? kJinhoOnline
+                        : const Color(0xFFC3C9CF),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(peer.online ? '켜짐' : '꺼짐',
+                    style: TextStyle(fontSize: 12, color: grey)),
+              ],
+            ),
+          ),
+          if (!peerTabModel.multiSelectionMode) ...[
+            _jinhoButton('파일', translate('Transfer file'),
+                filled: false,
+                onTap: () => connectInPeerTab(context, peer, widget.tab,
+                    isFileTransfer: true)),
+            const SizedBox(width: 6),
+            _jinhoButton('접속', translate('Connect'),
+                filled: true, onTap: () => widget.connect(context, peer.id)),
+            const SizedBox(width: 2),
+          ],
+          checkBoxOrActionMoreLandscape(peer, isTile: true),
+        ],
+      ),
     );
   }
 
@@ -886,6 +1056,7 @@ abstract class BasePeerCard extends StatelessWidget {
           if (!favs.contains(id)) {
             favs.add(id);
             await bind.mainStoreFav(favs: favs);
+            if (isDesktop) bind.mainLoadRecentPeers();
           }
           showToast(translate('Successful'));
         }();
