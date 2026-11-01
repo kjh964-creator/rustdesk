@@ -50,4 +50,4 @@ jobs:
             lib/models/model.dart \
             lib/common.dart lib/desktop/pages/desktop_home_page.dart \
             lib/desktop/pages/desktop_setting_page.dart \
-            lib/mobile/pages/connection_page.dart
+            lib/mobile/pages/connection_page.dart \n            lib/desktop/pages/connection_page.dart
