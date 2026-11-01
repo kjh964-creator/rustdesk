@@ -897,10 +897,10 @@ void setPasswordDialog({VoidCallback? notEmptyCallback}) async {
   var canSubmit = false;
   final RxString rxPass = "".obs;
   final rules = [
-    DigitValidationRule(),
-    UppercaseValidationRule(),
+    // JinhoDesk: letters + digit + special character; uppercase not required.
     LowercaseValidationRule(),
-    // SpecialCharacterValidationRule(),
+    DigitValidationRule(),
+    SpecialCharacterValidationRule(),
     MinCharactersValidationRule(8),
   ];
   final maxLength = bind.mainMaxEncryptLen();

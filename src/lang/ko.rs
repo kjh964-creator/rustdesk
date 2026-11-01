@@ -420,7 +420,7 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("wait_accept_uac_tip", "원격 사용자가 UAC 대화 상자를 수락할 때까지 기다리세요."),
         ("Elevate successfully", "권한 상승이 성공하였습니다"),
         ("uppercase", "대문자"),
-        ("lowercase", "소문자"),
+        ("lowercase", "영문"),
         ("digit", "숫자"),
         ("special character", "특수 문자"),
         ("length>=8", "8자 이상"),

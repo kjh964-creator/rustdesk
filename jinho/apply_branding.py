@@ -13,7 +13,7 @@ EDITS = {
         ('DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();',
          'DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("show_monitors_toolbar".to_owned(), "Y".to_owned())]));'),
         ('DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();',
-         'DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("allow-auto-update".to_owned(), "Y".to_owned())]));'),
+         'DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("allow-auto-update".to_owned(), "Y".to_owned()), ("api-server".to_owned(), "https://imist.co.kr/desk".to_owned())]));'),
         ('BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();',
          'BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("hide-powered-by-me".to_owned(), "Y".to_owned())]));'),
     ],

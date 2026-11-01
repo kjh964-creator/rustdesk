@@ -30,8 +30,8 @@ class LowercaseValidationRule extends ValidationRule {
   bool validate(String value) {
     return value.runes.any((int rune) {
       var character = String.fromCharCode(rune);
-      return character.toLowerCase() == character &&
-          character.toUpperCase() != character;
+      // JinhoDesk: any letter counts, so all-uppercase also passes.
+      return character.toLowerCase() != character.toUpperCase();
     });
   }
 }
@@ -52,7 +52,7 @@ class SpecialCharacterValidationRule extends ValidationRule {
 
   @override
   bool validate(String value) {
-    return value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    return value.contains(RegExp(r'[^A-Za-z0-9\s]'));
   }
 }
 
