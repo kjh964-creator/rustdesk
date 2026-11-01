@@ -11,6 +11,7 @@ EXPECT = {
         f'pub const RS_PUB_KEY: &str = "{SERVER_KEY}";',
         'APP_NAME: RwLock<String> = RwLock::new("JinhoDesk".to_owned());',
         'DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("show_monitors_toolbar".to_owned(), "Y".to_owned())]));',
+        'DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("allow-auto-update".to_owned(), "Y".to_owned())]));',
         'BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("hide-powered-by-me".to_owned(), "Y".to_owned())]));',
     ],
     "flutter/android/app/build.gradle": ['applicationId "com.jinho.desk"'],

@@ -1044,9 +1044,6 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
     if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
         std::thread::spawn(move || allow_err!(do_check_software_update()));
@@ -1083,8 +1080,8 @@ pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String>
     };
     let segments = segments.collect::<Vec<_>>();
     let release_id = match segments.as_slice() {
-        ["rustdesk", "rustdesk", "releases", "tag", release_id] => *release_id,
-        ["rustdesk", "rustdesk", "releases", "tag", release_id, ""] => *release_id,
+        ["kjh964-creator", "rustdesk", "releases", "tag", release_id] => *release_id,
+        ["kjh964-creator", "rustdesk", "releases", "tag", release_id, ""] => *release_id,
         _ => bail!(
             "Update URL is not a RustDesk release tag URL: {}",
             update_url
@@ -1136,9 +1133,18 @@ fn clear_software_update_url() {
     *update_url = String::new();
 }
 
+#[allow(dead_code)]
 fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
     let resp: hbb_common::VersionCheckResponse = serde_json::from_slice(&bytes)?;
-    let response_url = resp.url;
+    process_latest_release_url(resp.url)
+}
+
+/// JinhoDesk releases live on the fork; `/releases/latest` redirects to the
+/// newest release tag page.
+pub const JINHO_LATEST_RELEASE_URL: &str =
+    "https://github.com/kjh964-creator/rustdesk/releases/latest";
+
+fn process_latest_release_url(response_url: String) -> ResultType<()> {
     let release_id = release_id_from_update_url(&response_url)?;
     let latest_release_version = display_version_from_release_id(&release_id)?;
 
@@ -1163,22 +1169,21 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 // Because the url is always `https://api.rustdesk.com/version/latest`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
-    let (request, url) =
-        hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
+    let url = JINHO_LATEST_RELEASE_URL.to_owned();
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
     let is_tls_not_cached = tls_type.is_none();
     let tls_type = tls_type.unwrap_or(TlsType::Rustls);
     let client = create_http_client_async(tls_type, false);
-    let latest_release_response: ResultType<_> = match client.post(&url).json(&request).send().await
+    let latest_release_response: ResultType<_> = match client.get(&url).send().await
     {
         Ok(resp) => Ok((tls_type, resp)),
         Err(err) => {
             if is_tls_not_cached && err.is_request() {
                 let tls_type = TlsType::NativeTls;
                 let client = create_http_client_async(tls_type, false);
-                match client.post(&url).json(&request).send().await {
+                match client.get(&url).send().await {
                     Ok(resp) => Ok((tls_type, resp)),
                     Err(err) => Err(err.into()),
                 }
@@ -1196,12 +1201,13 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
                     "Software update check failed with HTTP status: {status}"
                 ))
             } else {
-                response.bytes().await.map_err(|err| err.into())
+                // Redirect target: .../releases/tag/<version>
+                Ok(response.url().to_string())
             }
         }
         Err(err) => Err(err),
     };
-    let result = response_bytes.and_then(process_software_update_check_response);
+    let result = response_bytes.and_then(process_latest_release_url);
     if result.is_err() {
         clear_software_update_url();
     }

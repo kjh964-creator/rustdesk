@@ -20,19 +20,19 @@ use artifact::{validate_artifact, validate_artifact_file_name, ArtifactUrlPolicy
 #[cfg(target_os = "macos")]
 pub(crate) use offline::{verify_offline_update_metadata, OfflineUpdateMetadataRequirements};
 
-const UPDATE_METADATA_SIGNATURE_CONTEXT: &[u8] = b"RustDesk update metadata v1\n";
-const UPDATE_APP: &str = "rustdesk";
-pub(crate) const PUBLIC_UPDATE_PACKAGE_ID: &str = "rustdesk";
+const UPDATE_METADATA_SIGNATURE_CONTEXT: &[u8] = b"JinhoDesk update metadata v1\n";
+const UPDATE_APP: &str = "jinhodesk";
+pub(crate) const PUBLIC_UPDATE_PACKAGE_ID: &str = "jinhodesk";
 const METADATA_SCHEMA_VERSION: u32 = 1;
 const SIGNATURE_SCHEMA_VERSION: u32 = 1;
 const SIGNATURE_ALGORITHM: &str = "ed25519";
 
 const TRUSTED_UPDATE_KEYS: &[TrustedUpdateKey] = &[TrustedUpdateKey {
-    key_id: "2026-ed25519-main",
+    key_id: "jinhodesk-2026-ed25519",
     algorithm: SIGNATURE_ALGORITHM,
     public_key: [
-        118, 252, 116, 215, 49, 217, 220, 109, 145, 119, 210, 101, 225, 198, 63, 2, 41, 127, 197,
-        127, 52, 251, 6, 204, 125, 117, 96, 204, 187, 166, 85, 59,
+        215, 38, 104, 203, 112, 248, 237, 127, 199, 108, 196, 140, 187, 176, 91, 123, 73, 125, 5,
+        34, 106, 5, 223, 108, 75, 59, 173, 197, 157, 170, 95, 117,
     ],
 }];
 

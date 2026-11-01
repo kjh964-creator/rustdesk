@@ -2,6 +2,14 @@ name: JinhoDesk build (Windows x64 + Android arm64)
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "JinhoDesk version (X.Y.Z, higher than the installed one)"
+        required: true
+      publish:
+        description: "Publish a GitHub release so installed apps update"
+        type: boolean
+        default: true
 
 env:
   SCITER_RUST_VERSION: "1.75"
@@ -12,7 +20,7 @@ env:
   ANDROID_FLUTTER_VERSION: "3.24.5"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
-  VERSION: "1.5.1"
+  VERSION: ${{ inputs.version }}
   NDK_VERSION: "r28c"
 
 jobs:
@@ -40,6 +48,7 @@ jobs:
         run: |
           python jinho/apply_branding.py
           python jinho/check_branding.py
+          python jinho/set_version.py ${{ inputs.version }}
 
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -193,6 +202,7 @@ jobs:
         run: |
           python3 jinho/apply_branding.py
           python3 jinho/check_branding.py
+          python3 jinho/set_version.py ${{ inputs.version }}
 
       - name: Install flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
@@ -292,3 +302,45 @@ jobs:
           name: JinhoDesk-android-arm64-apk
           path: ${{ steps.sign.outputs.signedReleaseFile }}
           if-no-files-found: error
+
+  publish:
+    needs: [build-windows, build-android]
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Download Windows EXE
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: JinhoDesk-windows-x64-exe
+          path: dl/exe
+
+      - name: Download Android APK
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: JinhoDesk-android-arm64-apk
+          path: dl/apk
+
+      - name: Build signed update metadata
+        env:
+          JINHO_UPDATE_KEY: ${{ secrets.JINHO_UPDATE_KEY }}
+        run: |
+          pip3 install --quiet cryptography
+          ls -la dl/exe dl/apk
+          python3 jinho/make_update_metadata.py "${{ inputs.version }}" release \
+            dl/exe/JinhoDesk.exe "$(ls dl/apk/*.apk | head -n 1)"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" release/* \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "JinhoDesk ${{ inputs.version }}" \
+            --notes "JinhoDesk ${{ inputs.version }}" \
+            --latest

@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
 
       - name: Apply JinhoDesk branding
         run: |
@@ -46,4 +48,6 @@ jobs:
             lib/mobile/widgets/jinho_side_keyboard.dart \
             lib/mobile/pages/remote_page.dart \
             lib/models/model.dart \
-            lib/common.dart lib/desktop/pages/desktop_home_page.dart
+            lib/common.dart lib/desktop/pages/desktop_home_page.dart \
+            lib/desktop/pages/desktop_setting_page.dart \
+            lib/mobile/pages/connection_page.dart

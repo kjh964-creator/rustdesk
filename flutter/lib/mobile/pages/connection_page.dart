@@ -84,7 +84,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
       slivers: [
         SliverList(
             delegate: SliverChildListDelegate([
-          if (!bind.isCustomClient() && !isIOS)
+          if (!isIOS)
             Obx(() => _buildUpdateUI(stateGlobal.updateUrl.value)),
           _buildRemoteIDTextField(),
         ])),
@@ -124,7 +124,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
         ? const SizedBox(height: 0)
         : InkWell(
             onTap: () async {
-              final url = 'https://rustdesk.com/download';
+              final url = 'https://imist.co.kr/remote/';
               // https://pub.dev/packages/url_launcher#configuration
               // https://developer.android.com/training/package-visibility/use-cases#open-urls-custom-tabs
               //
@@ -140,7 +140,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
                 width: double.infinity,
                 color: Colors.pinkAccent,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(translate('Download new version'),
+                child: Text('새 버전이 있습니다 · 눌러서 설치',
                     style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold))));
   }
