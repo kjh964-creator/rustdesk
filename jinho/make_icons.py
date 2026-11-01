@@ -91,7 +91,8 @@ def main():
 
     svg = (ROOT / "jinho/icon.svg").read_text(encoding="utf-8")
     (ROOT / "flutter/assets/icon.svg").write_text(svg, encoding="utf-8")
-    print("wrote flutter/assets/icon.svg")
+    (ROOT / "flutter/assets/auth-default.svg").write_text(svg, encoding="utf-8")
+    print("wrote flutter/assets/icon.svg, auth-default.svg")
 
 
 if __name__ == "__main__":
