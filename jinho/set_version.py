@@ -32,6 +32,9 @@ def main() -> None:
         sys.exit("usage: set_version.py X.Y.Z")
     v = sys.argv[1]
     sub_once(ROOT / "Cargo.toml", r'^version = "[^"]+"', f'version = "{v}"')
+    # CI builds with `cargo build --locked`, so the lock entry must match too.
+    sub_once(ROOT / "Cargo.lock", r'^(name = "rustdesk"\r?\n)version = "[^"]+"',
+             rf'\g<1>version = "{v}"')
     sub_once(ROOT / "flutter/pubspec.yaml", r"^version: .+$",
              f"version: {v}+{version_code(v)}")
 
