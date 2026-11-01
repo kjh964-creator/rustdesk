@@ -333,6 +333,10 @@ jobs:
           ls -la dl/exe dl/apk
           python3 jinho/make_update_metadata.py "${{ inputs.version }}" release \
             dl/exe/JinhoDesk.exe "$(ls dl/apk/*.apk | head -n 1)"
+          # Fixed names so the download page can link to releases/latest/download/...
+          cp "release/JinhoDesk-${{ inputs.version }}-x86_64.exe" release/JinhoDesk.exe
+          cp "release/JinhoDesk-${{ inputs.version }}-arm64.apk" release/JinhoDesk.apk
+          sha256sum release/*
 
       - name: Create GitHub release
         env:
