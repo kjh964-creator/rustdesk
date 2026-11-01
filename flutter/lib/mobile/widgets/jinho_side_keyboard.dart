@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 
 import '../../common.dart';
 import '../../models/input_model.dart';
-import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import 'hangul_composer.dart';
 
