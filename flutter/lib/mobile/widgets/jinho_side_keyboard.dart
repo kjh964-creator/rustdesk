@@ -59,9 +59,9 @@ class JinhoSideKeyboard {
       builder: (context) => SimpleDialog(
         title: const Text('가로 화면 키보드'),
         children: [
-          item(right, Icons.border_right, '진호 키보드 · 오른쪽',
+          item(right, Icons.border_right, 'JinDesk 키보드 · 오른쪽',
               '화면은 왼쪽, 키보드는 오른쪽'),
-          item(left, Icons.border_left, '진호 키보드 · 왼쪽',
+          item(left, Icons.border_left, 'JinDesk 키보드 · 왼쪽',
               '키보드는 왼쪽, 화면은 오른쪽'),
           item(phone, Icons.keyboard, '휴대폰 키보드', '평소 쓰는 키보드'),
           const Padding(

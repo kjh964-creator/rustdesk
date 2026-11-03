@@ -164,7 +164,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
                   ? translate("not_ready_status")
                   : bind.isIncomingOnly() || _svcIsUsingPublicServer.value
                       ? translate('Ready')
-                      : '${translate('Ready')} · 진호 서버에 연결됨',
+                      : '${translate('Ready')} · JinDesk 서버에 연결됨',
       style: bind.isIncomingOnly()
           ? TextStyle(fontSize: em)
           : TextStyle(
