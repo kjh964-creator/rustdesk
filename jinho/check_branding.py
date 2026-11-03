@@ -16,14 +16,14 @@ EXPECT = {
     ],
     "flutter/android/app/build.gradle": ['applicationId "com.jinho.desk"'],
     "flutter/android/app/src/main/AndroidManifest.xml": [
-        'android:label="진호 데스크"',
-        'android:label="진호 데스크 입력"',
+        'android:label="JinDesk"',
+        'android:label="JinDesk 입력"',
     ],
     "flutter/android/app/src/main/res/values/strings.xml": [
-        '<string name="app_name">진호 데스크</string>'
+        '<string name="app_name">JinDesk</string>'
     ],
-    "Cargo.toml": ['ProductName = "JinhoDesk"'],
-    "flutter/windows/runner/Runner.rc": ['VALUE "ProductName", "JinhoDesk" "\\0"'],
+    "Cargo.toml": ['ProductName = "JinDesk"'],
+    "flutter/windows/runner/Runner.rc": ['VALUE "ProductName", "JinDesk" "\\0"'],
 }
 FORBID = {
     "libs/hbb_common/src/config.rs": ["rs-ny.rustdesk.com", "OeVuKk5nlHiXp"],

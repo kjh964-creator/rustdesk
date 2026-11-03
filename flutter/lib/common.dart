@@ -3020,8 +3020,12 @@ int versionCmp(String v1, String v2) {
   return bind.versionToNumber(v: v1) - bind.versionToNumber(v: v2);
 }
 
+/// JinhoDesk: name shown to people (window titles, labels). The internal app
+/// name stays "JinhoDesk" so config folders, service and updates keep working.
+const kJinDisplayName = 'JinDesk';
+
 String getWindowName({WindowType? overrideType}) {
-  final name = bind.mainGetAppNameSync();
+  const name = kJinDisplayName;
   switch (overrideType ?? kWindowType) {
     case WindowType.Main:
       return name;

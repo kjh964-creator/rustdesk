@@ -1916,7 +1916,9 @@ fn get_uninstall(kill_self: bool, uninstall_printer: bool) -> ResultType<String>
 pub fn jinho_korean_shortcut(install: bool) {
     let public = std::env::var("PUBLIC").unwrap_or_else(|_| "C:\\Users\\Public".to_owned());
     let desk = std::path::Path::new(&public).join("Desktop");
-    let ko = desk.join("\u{c9c4}\u{d638} \u{b370}\u{c2a4}\u{d06c}.lnk"); // 진호 데스크
+    // Shown name is "JinDesk"; the old Korean name (진호 데스크) is removed.
+    let old_ko = desk.join("\u{c9c4}\u{d638} \u{b370}\u{c2a4}\u{d06c}.lnk");
+    let ko = desk.join("JinDesk.lnk");
     let en = desk.join(format!("{}.lnk", crate::get_app_name()));
     if install {
         if en.exists() {
@@ -1925,8 +1927,12 @@ pub fn jinho_korean_shortcut(install: bool) {
                 log::warn!("rename desktop shortcut failed: {e}");
             }
         }
+        if ko.exists() {
+            let _ = std::fs::remove_file(&old_ko);
+        }
     } else {
         let _ = std::fs::remove_file(&ko);
+        let _ = std::fs::remove_file(&old_ko);
     }
 }
 

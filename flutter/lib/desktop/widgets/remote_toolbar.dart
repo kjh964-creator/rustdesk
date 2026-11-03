@@ -1202,9 +1202,7 @@ class _MonitorMenu extends StatelessWidget {
     for (int i = 0; i < pi.displays.length; i++) {
       monitorList.add(buildMonitorButton(i));
     }
-    if (supportIndividualWindows && pi.displays.length > 1) {
-      monitorList.add(buildMonitorButton(kAllDisplayValue));
-    }
+    // JinhoDesk: no "all monitors in one view" button; [1] [2] stay.
     return monitorList;
   }
 

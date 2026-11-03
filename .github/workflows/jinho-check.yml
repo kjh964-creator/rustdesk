@@ -55,4 +55,4 @@ jobs:
             lib/common/widgets/peer_card.dart \
             lib/common/widgets/peer_tab_page.dart \
             lib/common/widgets/peers_view.dart \
-            lib/models/peer_model.dart lib/consts.dart
+            lib/models/peer_model.dart lib/consts.dart \n            lib/main.dart lib/mobile/pages/home_page.dart \n            lib/desktop/widgets/remote_toolbar.dart

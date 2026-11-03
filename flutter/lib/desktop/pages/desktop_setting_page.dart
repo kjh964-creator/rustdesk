@@ -2595,7 +2595,7 @@ class _AboutState extends State<_About> {
       final scrollController = ScrollController();
       return SingleChildScrollView(
         controller: scrollController,
-        child: _Card(title: '진호 데스크 정보', children: [
+        child: _Card(title: 'JinDesk 정보', children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2643,7 +2643,7 @@ class _AboutState extends State<_About> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '© ${DateTime.now().toString().substring(0, 4)} 진호 데스크',
+                            '© ${DateTime.now().toString().substring(0, 4)} JinDesk',
                             style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white),
