@@ -7,7 +7,7 @@ SERVER_KEY = "mYP5xgXB6Hd5AhZGBN5hPUgP8d5AW62VQrqW+LuPTaY="
 
 EXPECT = {
     "libs/hbb_common/src/config.rs": [
-        'pub const RENDEZVOUS_SERVERS: &[&str] = &["imist.co.kr", "192.168.0.18"];',
+        'pub const RENDEZVOUS_SERVERS: &[&str] = &["imist.co.kr"];',
         f'pub const RS_PUB_KEY: &str = "{SERVER_KEY}";',
         'APP_NAME: RwLock<String> = RwLock::new("JinhoDesk".to_owned());',
         'DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("show_monitors_toolbar".to_owned(), "Y".to_owned())]));',

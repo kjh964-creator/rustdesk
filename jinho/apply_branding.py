@@ -6,7 +6,7 @@ SERVER_KEY = "mYP5xgXB6Hd5AhZGBN5hPUgP8d5AW62VQrqW+LuPTaY="
 
 EDITS = {
     "libs/hbb_common/src/config.rs": [
-        ('&["rs-ny.rustdesk.com"]', '&["imist.co.kr", "192.168.0.18"]'),
+        ('&["rs-ny.rustdesk.com"]', '&["imist.co.kr"]'),
         ('"OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw="', f'"{SERVER_KEY}"'),
         ('APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned());',
          'APP_NAME: RwLock<String> = RwLock::new("JinhoDesk".to_owned());'),
