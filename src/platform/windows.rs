@@ -1703,7 +1703,6 @@ pub fn install_me(options: &str, path: String, silent: bool, debug: bool) -> Res
             "{shortcuts}
 md \"{start_menu}\"
 copy /Y \"{tmp_path}\\{app_name}.lnk\" \"{start_menu}\\\"
-copy /Y \"{tmp_path}\\Uninstall {app_name}.lnk\" \"{start_menu}\\\"
      "
         );
         reg_value_start_menu_shortcuts = "1".to_owned();
@@ -1933,6 +1932,24 @@ pub fn jinho_korean_shortcut(install: bool) {
     } else {
         let _ = std::fs::remove_file(&ko);
         let _ = std::fs::remove_file(&old_ko);
+    }
+    // Start menu: one "JinDesk" entry, no "Uninstall" entry (Windows' own
+    // Apps settings uninstalls it).
+    let pd = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".to_owned());
+    let programs = std::path::Path::new(&pd).join("Microsoft\\Windows\\Start Menu\\Programs");
+    let folder = programs.join(crate::get_app_name());
+    let entry = programs.join("JinDesk.lnk");
+    if install {
+        let src = folder.join(format!("{}.lnk", crate::get_app_name()));
+        if src.exists() {
+            if let Err(e) = std::fs::copy(&src, &entry) {
+                log::warn!("start menu shortcut copy failed: {e}");
+            } else {
+                let _ = std::fs::remove_dir_all(&folder);
+            }
+        }
+    } else {
+        let _ = std::fs::remove_file(&entry);
     }
 }
 
