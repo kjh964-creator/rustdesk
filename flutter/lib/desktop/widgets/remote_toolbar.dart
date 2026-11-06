@@ -993,9 +993,8 @@ class _MonitorCycle {
     if (t < 2) return;
     final from = _inRange ? _current : -1;
     final target = (from + 1) % t;
-    final isChooseDisplayToOpenInNewWindow = _pi.isSupportMultiDisplay &&
-        bind.sessionGetDisplaysAsIndividualWindows(sessionId: ffi.sessionId) ==
-            'Y';
+    // JinDesk: always switch in the same window (no extra display windows).
+    const isChooseDisplayToOpenInNewWindow = false;
     if (isChooseDisplayToOpenInNewWindow) {
       openMonitorInNewTabOrWindow(target, ffi.id, _pi);
     } else {
@@ -1115,8 +1114,6 @@ class _MonitorMenu extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(children: buildMonitorList(context, false)),
-        supportIndividualWindows ? Divider() : Offstage(),
-        supportIndividualWindows ? chooseDisplayBehavior() : Offstage(),
       ],
     );
   }
@@ -1284,10 +1281,8 @@ class _MonitorMenu extends StatelessWidget {
     }
     RxInt display = CurrentDisplayState.find(id);
     if (display.value != i) {
-      final isChooseDisplayToOpenInNewWindow = pi.isSupportMultiDisplay &&
-          bind.sessionGetDisplaysAsIndividualWindows(
-                  sessionId: ffi.sessionId) ==
-              'Y';
+      // JinDesk: always switch in the same window (no extra display windows).
+      const isChooseDisplayToOpenInNewWindow = false;
       if (isChooseDisplayToOpenInNewWindow) {
         openMonitorInNewTabOrWindow(i, ffi.id, pi);
       } else {
