@@ -25,6 +25,7 @@ import '../../models/shortcut_model.dart';
 import '../../utils/image.dart';
 import '../widgets/dialog.dart';
 import '../widgets/custom_scale_widget.dart';
+import '../widgets/hangul_composer.dart';
 import '../widgets/jinho_side_keyboard.dart';
 
 final initText = '1' * 1024;
@@ -379,38 +380,35 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       // clipboard
       oldValue = '';
     }
-    // This length-only diff assumes the IME appends at the end. If an IME
-    // leaves the caret inside paired punctuation, later insertions can replay
-    // the closing symbol: "()" -> "(a)" sends ")" instead of "a". This is a
-    // client text-diff issue, independent of the host keyboard layout.
-    if (newValue.length == oldValue.length) {
-      // ?
-    } else if (newValue.length < oldValue.length) {
-      final char = 'VK_BACK';
-      inputModel.inputKey(char);
-    } else {
-      final content = newValue.substring(oldValue.length);
-      if (content.length > 1) {
-        if (oldValue != '' &&
-            content.length == 2 &&
-            (content == '""' ||
-                content == '()' ||
-                content == '[]' ||
-                content == '<>' ||
-                content == "{}" ||
-                content == '”“' ||
-                content == '《》' ||
-                content == '（）' ||
-                content == '【】')) {
-          // can not only input content[0], because when input ], [ are also auo insert, which cause ] never be input
-          bind.sessionInputString(sessionId: sessionId, value: content);
-          _openKeyboardUnlocked();
-          return;
-        }
+    // JinDesk: prefix diff instead of a length-only diff, so in-place
+    // composing updates (Korean ㅇ -> 어 -> 언, autocorrect) reach the PC.
+    final edit = softKeyboardEdit(oldValue, newValue);
+    for (var i = 0; i < edit.backspaces; i++) {
+      inputModel.inputKey('VK_BACK');
+    }
+    final content = edit.insert;
+    if (content.isEmpty) return;
+    if (content.length > 1) {
+      if (edit.backspaces == 0 &&
+          oldValue != '' &&
+          content.length == 2 &&
+          (content == '""' ||
+              content == '()' ||
+              content == '[]' ||
+              content == '<>' ||
+              content == "{}" ||
+              content == '”“' ||
+              content == '《》' ||
+              content == '（）' ||
+              content == '【】')) {
+        // can not only input content[0], because when input ], [ are also auo insert, which cause ] never be input
         bind.sessionInputString(sessionId: sessionId, value: content);
-      } else {
-        inputChar(content);
+        _openKeyboardUnlocked();
+        return;
       }
+      bind.sessionInputString(sessionId: sessionId, value: content);
+    } else {
+      inputChar(content);
     }
   }
 

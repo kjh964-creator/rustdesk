@@ -45,6 +45,32 @@ void main() {
       print('FAIL ${keys.join()} -> "$got" (want "$want")');
     }
   });
-  print(fails == 0 ? 'all ${cases.length} passed' : '$fails failed');
+  // Phone keyboard field -> remote text (softKeyboardEdit)
+  final fieldCases = <List<String>, String>{
+    // Samsung/Gboard Korean: last syllable rewritten in place
+    ['1', '1ㅇ', '1어', '1언', '1언ㅈ', '1언제', '1언제ㄴ', '1언제나']: '언제나',
+    ['1', '1ㄲ', '1꾸', '1꿈', '1꿈ㄱ', '1꿈고', '1꿈과']: '꿈과',
+    // batchim moves to the next syllable
+    ['1', '1ㄷ', '1다', '1달', '1달ㄱ', '1달가']: '달가',
+    ['1', '1ㄷ', '1다', '1달', '1달가', '1다르']: '다르',
+    // english, autocorrect, delete, emoji
+    ['1', '1h', '1he', '1hel', '1helo', '1hello']: 'hello',
+    ['1', '1teh', '1the ']: 'the ',
+    ['1', '1ab', '1a']: 'a',
+    ['1', '1a\u{1F600}', '1a']: 'a',
+  };
+  fieldCases.forEach((steps, want) {
+    var remote = '';
+    for (var i = 1; i < steps.length; i++) {
+      final e = softKeyboardEdit(steps[i - 1], steps[i]);
+      final r = remote.runes.toList();
+      remote = String.fromCharCodes(r.sublist(0, r.length - e.backspaces)) + e.insert;
+    }
+    if (remote != want) {
+      fails++;
+      print('FAIL field ${steps.join(" > ")} -> "$remote" (want "$want")');
+    }
+  });
+  print(fails == 0 ? 'all ${cases.length + fieldCases.length} passed' : '$fails failed');
   if (fails > 0) throw Exception('hangul check failed');
 }

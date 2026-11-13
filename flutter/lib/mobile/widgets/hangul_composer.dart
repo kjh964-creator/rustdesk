@@ -132,3 +132,20 @@ class HangulComposer {
     return HangulEdit(1, composing);
   }
 }
+
+/// JinDesk: what to send to the remote PC when the phone keyboard changes the
+/// hidden text field from [oldValue] to [newValue].
+/// Korean (and other) keyboards rewrite the last letter in place while
+/// composing (ㅇ -> 어 -> 언), so the length stays the same. Comparing only the
+/// length lost those updates and split syllables into jamo. Instead, erase
+/// everything after the common prefix and type the new tail.
+/// Counts in code points so emoji are erased with one backspace.
+HangulEdit softKeyboardEdit(String oldValue, String newValue) {
+  final o = oldValue.runes.toList();
+  final n = newValue.runes.toList();
+  var common = 0;
+  while (common < o.length && common < n.length && o[common] == n[common]) {
+    common++;
+  }
+  return HangulEdit(o.length - common, String.fromCharCodes(n.sublist(common)));
+}
